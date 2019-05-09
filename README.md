@@ -1,4 +1,7 @@
 # assurance_api_grafana_plugin
 A python script which acts as a bridge between Grafana and the Inmarsat Assurance API
 
-See documentation word document for more information, and installation instructions.
+Documentation word document contains more information and installation instructions.
+Grafana json file contains an example dashboard, in JSON format.
+flask_bridge.py is the python script.
+
