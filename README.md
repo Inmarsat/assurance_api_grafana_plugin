@@ -15,5 +15,4 @@ This is an example of a dashboard which can be created using the plugin:
 
 *dashboard_image.jpg* is an image of an example dashboard.
 
-Author: Daniel Spencer
-For queries or improvements: daniel.spencer@inmarsat.com
+Author: Daniel Spencer. For queries or improvements: daniel.spencer@inmarsat.com
