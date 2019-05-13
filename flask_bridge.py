@@ -1,19 +1,21 @@
-import json, requests, os
+import json
+import requests
+import os
 import pandas as pd
 import numpy as np
 from flask import Flask, request, jsonify, abort
 from flask_cors import CORS, cross_origin
 from datetime import datetime
 
-def to_epoch(dt_format):#converts grafana timestamp to epoch in nanoseconds
-    epoch = int((datetime.strptime(dt_format, "%Y-%m-%dT%H:%M:%S.%fZ") - datetime(1970, 1, 1)).total_seconds() * 1e9)
-    return epoch
-
 app = Flask(__name__)
 cors = CORS(app)
 
-port_number = 5001 #Flask server will be running at http://localhost:port_number/
-methods = ('GET', 'POST') #API Methods used
+PORT_NUMBER = 5001 #Flask server will be running at http://localhost:PORT_NUMBER/
+METHODS = ('GET', 'POST') #API Methods used
+
+def to_epoch(dt_format):#converts grafana timestamp to epoch in nanoseconds
+    epoch = int((datetime.strptime(dt_format, "%Y-%m-%dT%H:%M:%S.%fZ") - datetime(1970, 1, 1)).total_seconds() * 1e9)
+    return epoch
 
 class API_Request(object):
     #object of type API_Request. .make_request() method makes the API request to REST API. Has variables needed to make the request
@@ -21,7 +23,7 @@ class API_Request(object):
     def __init__(self, x_api_key):
         self.baseurl = "https://inmarsat-prod.apigee.net/v1/fleetEdge/assurance/"
         self.x_api_key = x_api_key
-        self.limit = 1000000
+        self.limit = 10000
 
         #create metric_lookup_df
         response = self.make_request("metric/")
@@ -62,8 +64,8 @@ class API_Request(object):
 
         return response
 
-@app.route('/', methods=methods)#Needs to return 200 'OK'
-@cross_origin() #Not sure what this does, but it doesn't work without it!
+@app.route('/', methods=METHODS)#Needs to return 200 'OK'
+@cross_origin() #The browser will accept responses from a different origion, i.e. a different server, running on a different port number
 def return_ok():
     try: #try authorisation
         auth = request.authorization  #authentication header
@@ -74,15 +76,14 @@ def return_ok():
     except AttributeError:
         abort(403)
 
-@app.route('/search',methods=methods)#Needs to return a list of avaliable metrics
+@app.route('/search',methods=METHODS)#Needs to return a list of avaliable metrics
 @cross_origin()
 def search_route():
     return json.dumps(api_request.metric_lookup_df.index.to_list())
 
-@app.route('/query',methods=methods) #Needs to return assurence data
+@app.route('/query',methods=METHODS) #Needs to return assurence data
 @cross_origin()
 def query_route():
-
     req = request.get_json() #parse and returns the POST request as JSON, returns in dictionary form
 
     #Extract the from and to timestamps from Req dict, and convert to EPOCH timestamp in nanoseconds
@@ -93,12 +94,12 @@ def query_route():
     limit = req["maxDataPoints"] #Maximum number of datapoints to return
     edge_ids = []
 
-    for dict in req["adhocFilters"]:#get the x-api-key and edge ID
-        if dict["key"] == "EdgeID":
-            edge_ids.append(dict["value"]) #Assign to the global variable edge_id
+    for dictionary in req["adhocFilters"]:#get the x-api-key and edge ID
+        if dictionary["key"] == "EdgeID":
+            edge_ids.append(dictionary["value"]) #Assign to the global variable edge_id
 
-    types = [dict["type"] for dict in req["targets"]]
-    metric_names = [dict["target"] for dict in req["targets"]]
+    types = [dictionary["type"] for dictionary in req["targets"]]
+    metric_names = [dictionary["target"] for dictionary in req["targets"]]
     
     if all(Type == "timeserie" for Type in types):
         response_to_return = []
@@ -149,34 +150,35 @@ def query_route():
         return jsonify([response_to_return])
 
     else:
-        raise NameError("Not *all* request types are timeseries or table.")
-
-    
-@app.route('/tag-keys',methods=methods) #Needs to return the avaliable ad hoc filters.
+        abort(400)
+ 
+@app.route('/tag-keys',methods=METHODS) #Needs to return the avaliable ad hoc filters.
 @cross_origin()
 def tag_keys_route():
     return json.dumps([{"type":"string","text":"EdgeID"}])
 
-@app.route('/annotations',methods=methods)
-@cross_origin() #Not sure what this does, but it doesn't work without it!
+@app.route('/annotations',methods=METHODS)
+@cross_origin()
 def annotations_route():
     req = request.get_json() #POST request in dictionary form
     annotation = req["annotation"] #annotation part of the request
-    timestamp = datetime.now().timestamp()* 1000 #current EPOCH timestamp in milliseconds
+    timestamp = datetime.utcnow().timestamp()* 1000 #current EPOCH timestamp in milliseconds
 
     return jsonify(time = timestamp, title = "Simple JSON datasource", annotation = annotation)
 
-# @app.route('/tag-values',methods=methods) #Needs to retun the avaliable values for the adhoc filters
-# @cross_origin()
-# def tag_values_route():
-#     req = request.get_json()
-#     key = req["key"]
-#     if key == "EdgeID":
-#         response = api_request.make_request(endpoint = "status/",)
-#         avaliable_edge_ids = np.unique([dict["device_id"] for dict in response]).tolist()
-#         response = [{"text" : edge_id} for edge_id in avaliable_edge_ids]
-#         return json.dumps(response)
-#     else:
-#         return json.dumps([])
+@app.route('/tag-values',methods=METHODS) #Needs to retun the avaliable values for the adhoc filters
+@cross_origin()
+def tag_values_route():
+    req = request.get_json()
+    key = req["key"]
+    if key == "EdgeID":
+        response = api_request.make_request(endpoint = "status/")
 
-app.run(host='localhost', port = port_number,debug = True) #runs on http://localhost:5001/
+        avaliable_edge_ids = np.unique([dictionary["device_id"] for dictionary in response]).tolist()
+        response = [{"text" : edge_id} for edge_id in avaliable_edge_ids]
+        return json.dumps(response)
+    else:
+        return json.dumps([])
+
+app.run(host='localhost', port = PORT_NUMBER,debug = True) 
+#runs on http://localhost:PORT_NUMBER/
