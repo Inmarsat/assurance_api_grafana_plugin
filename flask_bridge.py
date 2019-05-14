@@ -20,20 +20,12 @@ def to_epoch(dt_format):#converts grafana timestamp to epoch in nanoseconds
 class API_Request(object):
     #object of type API_Request. .make_request() method makes the API request to REST API. Has variables needed to make the request
 
-    def __init__(self, x_api_key):
+    def __init__(self):
         self.baseurl = "https://inmarsat-prod.apigee.net/v1/fleetEdge/assurance/"
-        self.x_api_key = x_api_key
         self.limit = 10000
+        self.x_api_key = ""
 
-        #create metric_lookup_df
-        response = self.make_request("metric/")
-
-        metric_lookup_df = pd.DataFrame.from_dict(response)
-
-        device_type = metric_lookup_df["device_type"].to_list()
-        metric_name = metric_lookup_df["metric_name"].to_list()
-        metric_lookup_df.index = [device_type[ii] + "_" + metric_name[ii] for ii in range(0,len(metric_name))]
-        self.metric_lookup_df = metric_lookup_df
+        return None
 
     def make_request(self, endpoint, **kwargs):
 
@@ -57,33 +49,48 @@ class API_Request(object):
         headers = {'x-api-key':  self.x_api_key} #API key for VAR
 
         response_class = requests.request("GET", api_url, headers=headers, params=querystring) #GET request to API
-        if response_class.status_code != 200: #if the status code is not 200, raise an error
-            raise ValueError("REST API returning status code " + str(response_class.status_code))
+        if response_class.status_code != 200: #if the status code is not 200, abort with status code 500
+            raise abort(500)
 
         response = json.loads(response_class.text) #convert JSON string to dictionary
 
         return response
 
+    def authenticate(self, x_api_key):
+        if x_api_key != self.x_api_key:
+            self.x_api_key = x_api_key
+            #create metric_lookup_df
+            response = self.make_request("metric/")
+
+            metric_lookup_df = pd.DataFrame.from_dict(response)
+
+            device_type = metric_lookup_df["device_type"].to_list()
+            metric_name = metric_lookup_df["metric_name"].to_list()
+            metric_lookup_df.index = [device_type[ii] + "_" + metric_name[ii] for ii in range(0,len(metric_name))]
+            self.metric_lookup_df = metric_lookup_df
+        else:
+            pass
+
+        return None
+                
+api_request = API_Request()
+
 @app.route('/', methods=METHODS)#Needs to return 200 'OK'
 @cross_origin() #The browser will accept responses from a different origion, i.e. a different server, running on a different port number
 def return_ok():
-    try: #try authorisation
-        auth = request.authorization  #authentication header
-        x_api_key = auth.password #x_api_key contained as password
-        global api_request
-        api_request = API_Request(x_api_key = x_api_key) #Create an instance of the class API_Request, in the global enviroment
-        return "Ok"
-    except AttributeError:
-        abort(403)
+    api_request.authenticate(request.authorization.password)
+    return "Ok"
 
 @app.route('/search',methods=METHODS)#Needs to return a list of avaliable metrics
 @cross_origin()
 def search_route():
+    api_request.authenticate(request.authorization.password)
     return json.dumps(api_request.metric_lookup_df.index.to_list())
 
 @app.route('/query',methods=METHODS) #Needs to return assurence data
 @cross_origin()
 def query_route():
+    api_request.authenticate(request.authorization.password)
     req = request.get_json() #parse and returns the POST request as JSON, returns in dictionary form
 
     #Extract the from and to timestamps from Req dict, and convert to EPOCH timestamp in nanoseconds
@@ -155,11 +162,15 @@ def query_route():
 @app.route('/tag-keys',methods=METHODS) #Needs to return the avaliable ad hoc filters.
 @cross_origin()
 def tag_keys_route():
+    api_request.authenticate(request.authorization.password)
+
     return json.dumps([{"type":"string","text":"EdgeID"}])
 
 @app.route('/annotations',methods=METHODS)
 @cross_origin()
 def annotations_route():
+    api_request.authenticate(request.authorization.password)
+
     req = request.get_json() #POST request in dictionary form
     annotation = req["annotation"] #annotation part of the request
     timestamp = datetime.utcnow().timestamp()* 1000 #current EPOCH timestamp in milliseconds
@@ -169,6 +180,8 @@ def annotations_route():
 @app.route('/tag-values',methods=METHODS) #Needs to retun the avaliable values for the adhoc filters
 @cross_origin()
 def tag_values_route():
+    api_request.authenticate(request.authorization.password)
+
     req = request.get_json()
     key = req["key"]
     if key == "EdgeID":
