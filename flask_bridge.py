@@ -97,8 +97,6 @@ def query_route():
     range_from = to_epoch(req["range"]["from"])
     range_to = to_epoch(req["range"]["to"])
 
-    freq = req["intervalMs"] #frequency of sampeling in miliseconds
-    limit = req["maxDataPoints"] #Maximum number of datapoints to return
     edge_ids = []
 
     for dictionary in req["adhocFilters"]:#get the x-api-key and edge ID
