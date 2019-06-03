@@ -22,7 +22,7 @@ class API_Request(object):
 
     def __init__(self):
         self.baseurl = "https://inmarsat-prod.apigee.net/v1/fleetEdge/assurance/"
-        self.limit = 10000
+        self.limit = 1000000
         self.x_api_key = ""
 
         return None
