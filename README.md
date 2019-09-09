@@ -14,5 +14,3 @@ This is an example of a dashboard which can be created using the plugin:
 *flask_bridge.py* is the python code.
 
 *dashboard_image.jpg* is an image of an example dashboard.
-
-Author: Daniel Spencer. For queries or improvements: daniel.spencer@inmarsat.com
