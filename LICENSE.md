@@ -3,8 +3,8 @@ Inmarsat hereby grants to Customer a non-exclusive, non-transferable, free of ch
 
 1. the Software may be used or modified by Customer solely for the purpose of enabling Customer to integrate Inmarsat’s Fleet Edge solution with either Customer’s Grafana Assurance dashboard or Customer’s own assurance dashboard (collectively referred to as “Customer’s Systems”) (“Purpose”); and
 2. except as otherwise provided in (a) above, Customer has no right (and shall not permit any third party) to copy, adapt, reverse engineer, decompile, disassemble, modify, adapt or make error corrections to the Software in whole or in part.
-If Customer creates any modifications or enhancements to the Software (“Modifications”) which it wishes to make available to other Inmarsat customers using the Software (“Recipients”), Customer may do so provided that:
 
+If Customer creates any modifications or enhancements to the Software (“Modifications”) which it wishes to make available to other Inmarsat customers using the Software (“Recipients”), Customer may do so provided that:
 1. Customer makes available a copy of these terms to the Recipient;
 2. Customer specifically identifies the Modifications and distinguishes those from the Software;
 any copyright, patent, trademark, and attribution notices attached to the Software are retained;
